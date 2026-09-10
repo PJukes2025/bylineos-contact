@@ -1,0 +1,36 @@
+name: Rebuild contact sheet
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: contact-sheet
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install poppler + python deps
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+          pip install --quiet google-api-python-client google-auth Pillow openpyxl
+      - name: Write service-account key
+        env:
+          GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
+        run: printf '%s' "$GDRIVE_SA_KEY" > "$RUNNER_TEMP/sa.json"
+      - name: Render contact sheet
+        env:
+          GDRIVE_SA_KEY_PATH: ${{ runner.temp }}/sa.json
+        run: python bylineos-launcher-16up/tools/render_contact_sheet.py
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "BylineOS bot"
+          git config user.email "noreply@bylinetimes.com"
+          git add bylineos-launcher-16up/contact
+          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Auto rebuild ed090 contact sheet"; git push; fi
