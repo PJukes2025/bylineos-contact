@@ -1,0 +1,8 @@
+{
+  "name": "bylineos-contact",
+  "compatibility_date": "2026-09-10",
+  "assets": {
+    "directory": "./bylineos-launcher-16up",
+    "not_found_handling": "404-page"
+  }
+}
